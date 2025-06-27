@@ -95,7 +95,7 @@ export default function ClarifyingQuestions({ goal, onComplete }: ClarifyingQues
       <div className="max-w-3xl mx-auto">
         <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="text-center mb-8">
           <MessageCircle className="w-12 h-12 text-primary mx-auto mb-4" />
-          <h1 className="text-3xl font-bold mb-2">Let's refine your prompt</h1>
+          <h1 className="text-3xl font-bold mb-2">Let&apos;s refine your prompt</h1>
           <Badge variant="secondary">
             Question {currentQuestionIndex + 1} of {questions.length}
           </Badge>

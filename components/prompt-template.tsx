@@ -47,7 +47,7 @@ export default function PromptTemplate({ template, variables, onComplete }: Prom
           <FileText className="w-12 h-12 text-primary mx-auto mb-4" />
           <h1 className="text-3xl font-bold mb-2">Your Prompt Template</h1>
           <p className="text-muted-foreground">
-            Here's your generated prompt with variables. Fill in sample values to test it.
+            Here&apos;s your generated prompt with variables. Fill in sample values to test it.
           </p>
         </motion.div>
 
