@@ -7,14 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Copy, Play, Check, Loader2, TestTube } from "lucide-react"
 import ModelSelection from "@/components/model-selection"
+import { DatabaseService } from "@/lib/database"
 
 interface PromptTestingProps {
   template: string
   variables: string[]
   variableValues: Record<string, string>
+  sessionId?: string | null
 }
 
-export default function PromptTesting({ template, variables, variableValues }: PromptTestingProps) {
+export default function PromptTesting({ template, variables, variableValues, sessionId }: PromptTestingProps) {
   const [selectedModel, setSelectedModel] = useState("gpt-4")
   const [temperature, setTemperature] = useState(0.7)
   const [isLoading, setIsLoading] = useState(false)
@@ -28,18 +30,44 @@ export default function PromptTesting({ template, variables, variableValues }: P
 
   const handleTestPrompt = async () => {
     setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      setResult(`This is a simulated response from ${selectedModel}. In a real implementation, this would be the actual LLM response based on your prompt and the selected model parameters.
+    
+    try {
+      const prompt = await DatabaseService.createPrompt(
+        sessionId || 'default-session',
+        template,
+        variableValues,
+        resolvedPrompt
+      )
+
+      // Simulate LLM API call (in real implementation, this would call actual LLM API)
+      const startTime = Date.now()
+      
+      const simulatedResponse = `This is a simulated response from ${selectedModel}. In a real implementation, this would be the actual LLM response based on your prompt and the selected model parameters.
 
 The response would be generated using:
 - Model: ${selectedModel}
 - Temperature: ${temperature}
 - Your resolved prompt with all variables filled in.
 
-This demonstrates how your prompt template works with real variable values and gives you a preview of the expected output quality and format.`)
+This demonstrates how your prompt template works with real variable values and gives you a preview of the expected output quality and format.`
+
+      const responseTime = Date.now() - startTime + 2000 // Add 2s to simulate API call time
+
+      await DatabaseService.createResult(
+        prompt.id,
+        selectedModel,
+        temperature,
+        simulatedResponse,
+        responseTime
+      )
+
+      setResult(simulatedResponse)
+    } catch (error) {
+      console.error('Error testing prompt:', error)
+      setResult('Error: Failed to test prompt. Please check your database connection.')
+    } finally {
       setIsLoading(false)
-    }, 2000)
+    }
   }
 
   const handleCopyPrompt = async () => {

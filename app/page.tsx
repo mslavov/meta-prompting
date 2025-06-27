@@ -10,6 +10,7 @@ import GoalInput from "@/components/goal-input"
 import ClarifyingQuestions from "@/components/clarifying-questions"
 import PromptTemplate from "@/components/prompt-template"
 import PromptTesting from "@/components/prompt-testing"
+import { DatabaseService } from "@/lib/database"
 
 type Step = "landing" | "goal" | "questions" | "template" | "testing"
 
@@ -21,34 +22,119 @@ export default function HomePage() {
   const [variables, setVariables] = useState<string[]>([])
   const [variableValues, setVariableValues] = useState<Record<string, string>>({})
   const [selectedModel, setSelectedModel] = useState("")
+  const [sessionId, setSessionId] = useState<string | null>(null)
 
   const handleGetStarted = () => {
     setCurrentStep("goal")
   }
 
-  const handleGoalSubmit = (userGoal: string) => {
-    setGoal(userGoal)
-    setCurrentStep("questions")
+  const handleGoalSubmit = async (userGoal: string) => {
+    try {
+      const session = await DatabaseService.createSession(userGoal)
+      setSessionId(session.id)
+      setGoal(userGoal)
+      setCurrentStep("questions")
+    } catch (error) {
+      console.error('Error creating session:', error)
+      setGoal(userGoal)
+      setCurrentStep("questions")
+    }
   }
 
-  const handleQuestionsComplete = (userAnswers: Record<string, string>) => {
-    setAnswers(userAnswers)
-    // Generate prompt template based on goal and answers
-    const template = generatePromptTemplate(goal, userAnswers)
-    const extractedVars = extractVariables(template)
-    setPromptTemplate(template)
-    setVariables(extractedVars)
-    setCurrentStep("template")
+  const handleQuestionsComplete = async (userAnswers: Record<string, string>) => {
+    try {
+      setAnswers(userAnswers)
+      // Generate prompt template based on goal and answers
+      const template = await generatePromptTemplate(goal, userAnswers)
+      const extractedVars = extractVariables(template)
+      setPromptTemplate(template)
+      setVariables(extractedVars)
+      
+      if (sessionId) {
+        await DatabaseService.updateSession(sessionId, {
+          current_step: 'template',
+          answers: userAnswers,
+          template: template,
+          variables: extractedVars.reduce((acc, variable) => {
+            acc[variable] = ''
+            return acc
+          }, {} as Record<string, any>)
+        })
+      }
+      
+      setCurrentStep("template")
+    } catch (error) {
+      console.error('Error updating session:', error)
+      setAnswers(userAnswers)
+      const template = await generatePromptTemplate(goal, userAnswers)
+      const extractedVars = extractVariables(template)
+      setPromptTemplate(template)
+      setVariables(extractedVars)
+      setCurrentStep("template")
+    }
   }
 
-  const handleTemplateComplete = (values: Record<string, string>) => {
-    setVariableValues(values)
-    setCurrentStep("testing")
+  const handleTemplateComplete = async (values: Record<string, string>) => {
+    try {
+      setVariableValues(values)
+      
+      if (sessionId) {
+        await DatabaseService.updateSession(sessionId, {
+          current_step: 'testing',
+          variables: values
+        })
+      }
+      
+      setCurrentStep("testing")
+    } catch (error) {
+      console.error('Error updating session:', error)
+      setVariableValues(values)
+      setCurrentStep("testing")
+    }
   }
 
-  const generatePromptTemplate = (goal: string, answers: Record<string, string>) => {
-    // This would typically call an AI service to generate the template
-    return `You are an expert assistant helping with ${goal}. 
+  const generatePromptTemplate = async (goal: string, answers: Record<string, string>) => {
+    try {
+      
+      let template = `You are an expert assistant helping with ${goal}.\n\n`
+      
+      if (answers.context) {
+        template += `Context: ${answers.context}\n`
+      } else {
+        template += `Context: [CONTEXT]\n`
+      }
+      
+      if (answers.requirements) {
+        template += `Requirements: ${answers.requirements}\n`
+      } else {
+        template += `Requirements: [REQUIREMENTS]\n`
+      }
+      
+      if (answers.format) {
+        template += `Output Format: ${answers.format}\n`
+      } else {
+        template += `Output Format: [FORMAT]\n`
+      }
+      
+      template += `\nPlease provide a comprehensive response that addresses the user's request: [USER_REQUEST]\n`
+      
+      const additionalKeys = Object.keys(answers).filter(key => 
+        !['context', 'requirements', 'format'].includes(key)
+      )
+      
+      if (additionalKeys.length > 0) {
+        template += `\nAdditional Information:\n`
+        additionalKeys.forEach(key => {
+          template += `${key}: ${answers[key]}\n`
+        })
+      }
+      
+      template += `\nAdditional considerations: [ADDITIONAL_NOTES]`
+      
+      return template
+    } catch (error) {
+      console.error('Error generating prompt template:', error)
+      return `You are an expert assistant helping with ${goal}. 
 
 Context: ${answers.context || "[CONTEXT]"}
 Requirements: ${answers.requirements || "[REQUIREMENTS]"}
@@ -57,6 +143,7 @@ Output Format: ${answers.format || "[FORMAT]"}
 Please provide a comprehensive response that addresses the user's request: [USER_REQUEST]
 
 Additional considerations: [ADDITIONAL_NOTES]`
+    }
   }
 
   const extractVariables = (template: string) => {
@@ -179,6 +266,7 @@ Additional considerations: [ADDITIONAL_NOTES]`
             template={promptTemplate}
             variables={variables}
             variableValues={variableValues}
+            sessionId={sessionId}
           />
         )}
       </AnimatePresence>

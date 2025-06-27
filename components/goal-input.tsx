@@ -43,7 +43,7 @@ export default function GoalInput({ onSubmit }: GoalInputProps) {
           className="text-center mb-8"
         >
           <Target className="w-12 h-12 text-primary mx-auto mb-4" />
-          <h1 className="text-3xl font-bold mb-2">What's your goal?</h1>
+          <h1 className="text-3xl font-bold mb-2">What&apos;s your goal?</h1>
           <p className="text-muted-foreground">
             Describe what you want your prompt to accomplish. Be as specific as possible.
           </p>
@@ -54,8 +54,8 @@ export default function GoalInput({ onSubmit }: GoalInputProps) {
             <CardHeader>
               <CardTitle>Describe Your Prompt Goal</CardTitle>
               <CardDescription>
-                Examples: "Create a customer service chatbot response", "Generate product descriptions", "Analyze user
-                feedback sentiment"
+                Examples: &quot;Create a customer service chatbot response&quot;, &quot;Generate product descriptions&quot;, &quot;Analyze user
+                feedback sentiment&quot;
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
